@@ -1,0 +1,14 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: services-ingress
+  namespace: kube-system
+spec:
+  rules:
+  - host: registry.kube.APP_DOMAIN
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: kube-registry
+          servicePort: 80

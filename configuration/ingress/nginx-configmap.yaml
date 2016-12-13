@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-load-balancer-conf
+  namespace: kube-system
+data:
+  # Find a suitable default tcp backend.
+  body-size: 1000m

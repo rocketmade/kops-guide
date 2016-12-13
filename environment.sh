@@ -1,0 +1,11 @@
+export APP_NAME=
+export APP_DOMAIN=
+export KUBE_DOCKER_PASSWORD=changemeplease...prettyplease
+export AWS_DEFAULT_REGION=us-east-1
+export KUBECONFIG=./.kube-config.yaml
+export AWS_S3_REGION='us-east-1'
+export ENABLE_CLUSTER_UI=false
+export APP_KEY_PATH=~/.ec2/${APP_NAME}
+export KUBERNETES_BUCKET_NAME=${APP_NAME}_kube
+export KOPS_STATE_STORE=s3://${KUBERNETES_BUCKET_NAME}
+export KUBE_CLUSTER_NAME=kube.${APP_DOMAIN}

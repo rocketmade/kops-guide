@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tcp-configmap
+  namespace: kube-system
+data:
+  # Find a suitable default tcp backend.
+  5000: "kube-system/kube-registry:5000"
