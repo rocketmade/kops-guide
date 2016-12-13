@@ -13,66 +13,67 @@ All AWS steps below can be done through the UI, but automating them via the comm
 Preferably covering APP_DOMAIN, *.<APP_DOMAIN>, *.kube.<APP_DOMAIN>
 It needs to cover at least registry.kube.<APP_DOMAIN> and any domains that you will cover
 *** Log in on the AWS CLI
-```
+#+BEGIN_SRC sh
 aws configure
-```
+#+END_SRC
 
 ** Kops Setup
 *** Set up environment variables
 Set the `APP_NAME` and `APP_DOMAIN` in `environment.sh`
 *** Create the S3 bucket for Kops
 Kops keeps its cluster configuration information in an s3 bucket
-```
+#+BEGIN_SRC sh
 source environment.sh # if you have not done it already
 aws s3 mb $KOPS_STATE_STORE
-```
+#+END_SRC
 
 *** Create IAM user for registry
-```
+#+BEGIN_SRC sh
 source environment.sh
 
 mkdir -p tmp
 aws iam create-user --user-name registry
 aws iam put-user-policy --user-name registry --policy-name kube_bucket_access --policy-document "{ \"Statement\": [ { \"Resource\": [\"arn:aws:s3:::${KUBERNETES_BUCKET_NAME}\",\"arn:aws:s3:::${KUBERNETES_BUCKET_NAME}/*\"],\"Action\": [\"s3:DeleteObject\",\"s3:GetBucketLocation\",\"s3:GetObject\",\"s3:ListBucket\",\"s3:PutObject\",\"s3:PutObjectAcl\"], \"Effect\": \"Allow\" }], \"Version\": \"2012-10-17\" }"
 aws iam create-access-key --user-name registry > tmp/registry.json
-```
+#+END_SRC
 
 *** Update configuration/kube-system/registry-rc.yaml to reflect AWS credentials in tmp/registry.json and to set the bucket path <APP_NAME>_kube
 
 *** Generate a new SSH key for the kube cluster
-```
+#+BEGIN_SRC sh
 source environment.sh
 ssh-keygen -t rsa -N "" -f ${APP_KEY_PATH}
-```
+#+END_SRC
 
 *** Fire up the kops cluster
-```
+#+BEGIN_SRC sh
 source environment.sh
 kops create cluster $KUBE_CLUSTER_NAME --cloud=aws --dns-zone=$APP_DOMAIN --zones=${AWS_S3_REGION}b,${AWS_S3_REGION}c --node-size=t2.small --master-size=t2.small --node-count=4 --ssh-public-key $APP_KEY_PATH.pub --yes
-```
+#+END_SRC
 
 *** Twiddle Thumbs, consider starting images building while you wait for the cluster to finish starting up.
 **** Common issue may be that the DNS isn't configured properly, make sure that kube was able to set the dns records for etcd and api. This may take 10-20 minutes
 **** Keep waiting, kube will set up its own DNS records which are required for the next steps
 
 ** Create registry htpasswd
-```
+#+BEGIN_SRC sh
 mkdir -p configuration/kube-system/registry/
 docker run --entrypoint htpasswd registry:2 -Bbn kube <kube_password> >> configuration/kube-system/registry/htpasswd
 docker run --entrypoint htpasswd registry:2 -Bbn developer <developer_password> >> configuration/kube-system/registry/htpasswd
 kubectl create secret generic registry-auth-secret --from-file=configuration/kube-system/registry/htpasswd --namespace=kube-system
-```
+#+END_SRC
 *** Create namespaces and secrets
-```
+#+BEGIN_SRC sh
 source environment.sh
 
 for app_env in {kube-system,default}
 do
   kubectl create secret docker-registry internal-registry-login --docker-server registry.kube.${APP_DOMAIN} --docker-username=kube --docker-password=$KUBE_DOCKER_PASSWORD --docker-email=info@rocketmade.com --namespace=$app_env
 done
-```
+#+END_SRC
 
 ** Fire up the registry and ingress services
+#+BEGIN_SRC sh
 kubectl apply -f configuration/kube-system/registry-rc.yaml
 kubectl apply -f configuration/kube-system/registry-svc.yaml
 
@@ -80,9 +81,11 @@ for f in configuration/ingress/*.yaml
 do
 kubectl apply -f $f
 done
+#+END_SRC
 
 ** Point registry.kube.${APP_DOMAIN} to the new ingress load balancer, as an alias
 
 ** Confirm that you can log in to the registry
-
+#+BEGIN_SRC sh
 docker login registry.kube.${APP_DOMAIN}
+#+END_SRC
