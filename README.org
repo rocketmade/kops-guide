@@ -70,7 +70,7 @@ ssh-keygen -t rsa -N "" -f ${APP_KEY_PATH}
 *** Fire up the kops cluster
 #+BEGIN_SRC sh
 source environment.sh
-kops create cluster $KUBE_CLUSTER_NAME --cloud=aws --dns-zone=$APP_DOMAIN --zones=${AWS_S3_REGION}b,${AWS_S3_REGION}c --node-size=t2.small --master-size=t2.small --node-count=4 --ssh-public-key $APP_KEY_PATH.pub --yes
+kops create cluster $KUBE_CLUSTER_NAME --cloud=aws --dns-zone=$APP_DOMAIN --zones=${AWS_S3_REGION}b,${AWS_S3_REGION}c --node-size=t2.medium --master-size=t2.medium --node-count=4 --ssh-public-key $APP_KEY_PATH.pub --yes
 #+END_SRC
 
 *** Twiddle Thumbs, consider starting your application container images building while you wait for the cluster to finish starting up.
