@@ -6,9 +6,8 @@ metadata:
   labels:
     k8s-app: kube-registry
     version: v0
-    # kubernetes.io/cluster-service: "true"
 spec:
-  replicas: 1
+  replicas: 2
   strategy:
     type: Recreate
   template:
@@ -16,11 +15,10 @@ spec:
       labels:
         k8s-app: kube-registry
         version: v0
-        # kubernetes.io/cluster-service: "true"
     spec:
       containers:
       - name: registry
-        image: registry:2.4.0
+        image: registry:2.5.0
         resources:
           limits:
             cpu: 100m
@@ -29,17 +27,27 @@ spec:
             cpu: 100m
             memory: 256Mi
         env:
+        - name: SETTINGS_FLAVOR
+          value: s3
+        - name: AWS_BUCKET
+          value:
+        - name: STORAGE_PATH
+          value: /registry
+        - name: AWS_KEY
+          value:
+        - name: AWS_SECRET
+          value:
+        - name: SEARCH_BACKEND
+          value: sqlalchemy
         - name: REGISTRY_HTTP_ADDR
           value: :5000
-        - name: REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY
-          value: /var/lib/registry
+        - name: REGISTRY_AUTH
+          value: htpasswd
         - name: REGISTRY_AUTH_HTPASSWD_REALM
-          value: basic_realm
+          value: "Registry Realm"
         - name: REGISTRY_AUTH_HTPASSWD_PATH
           value: /auth/htpasswd
         volumeMounts:
-        - name: image-store
-          mountPath: /var/lib/registry
         - name: auth-dir
           mountPath: /auth
         ports:
@@ -47,9 +55,6 @@ spec:
           name: registry
           protocol: TCP
       volumes:
-      - name: image-store
-        persistentVolumeClaim:
-          claimName: kube-registry-data-claim
       - name: auth-dir
         secret:
           secretName: registry-auth-secret
