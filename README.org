@@ -1,4 +1,9 @@
-* Setting up a Kubernetes Cluster
+* Setting up a Kubernetes Cluster with Kops on AWS
+** Goals
+*** Quickly set up a kube cluster on AWS
+*** Set up an internal registry with authentication
+*** Set up an ingress controller
+
 ** Prerequisites
 *** Install Docker
 [[https://docs.docker.com/engine/installation/][Latest instructions should be in Docker's documentation]]
@@ -60,7 +65,7 @@ aws iam create-access-key --user-name registry > tmp/registry.json
 #+END_SRC
 
 *** Update configuration/kube-system/registry-rc.yaml to reflect AWS credentials in tmp/registry.json and to set the bucket path ~<APP_NAME>_kube~
-
+*** Update configuration/ingress/ingress.kube-system.yaml to reflect the correct domain for incoming requests to the registry
 *** Generate a new SSH key for the kube cluster
 #+BEGIN_SRC sh
 source environment.sh
@@ -82,6 +87,8 @@ kops create cluster $KUBE_CLUSTER_NAME --cloud=aws --dns-zone=$APP_DOMAIN --zone
 This will secure your registry
 
 #+BEGIN_SRC sh
+source environment.sh
+
 mkdir -p configuration/kube-system/registry/
 docker run --entrypoint htpasswd registry:2 -Bbn kube <kube_password> >> configuration/kube-system/registry/htpasswd
 docker run --entrypoint htpasswd registry:2 -Bbn developer <developer_password> >> configuration/kube-system/registry/htpasswd
@@ -102,6 +109,8 @@ done
 *** Fire up the registry and ingress services
 
 #+BEGIN_SRC sh
+source environment.sh
+
 kubectl apply -f configuration/kube-system/registry-rc.yaml
 kubectl apply -f configuration/kube-system/registry-svc.yaml
 
@@ -111,10 +120,11 @@ kubectl apply -f $f
 done
 #+END_SRC
 
-*** Point registry.kube.${APP_DOMAIN} to the new ingress load balancer, as an alias
+*** Point ~registry.kube.${APP_DOMAIN}~ to the new ingress load balancer, as an alias
 
 *** Confirm that you can log in to the registry
 #+BEGIN_SRC sh
+source environment.sh
 docker login registry.kube.${APP_DOMAIN}
 #+END_SRC
 
